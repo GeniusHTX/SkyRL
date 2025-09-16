@@ -12,6 +12,11 @@ CKPT_PATH="$HOME/ckpts/llm_mini_swe"
 # NOTE: For a multi-node cluster, ensure that this is on NFS so that you can save all trajectories in the same path
 MINISWE_TRAJ_DIR="$HOME/mini_swe_agent_trajs_05B"
 
+# Container runtime used by Mini-SWE-Agent (defaults to Podman). Override by
+# exporting CONTAINER_RUNTIME or MINISWE_CONTAINER_EXECUTABLE before invoking
+# this script, e.g. `CONTAINER_RUNTIME=docker bash run_mini_swe_05B.sh`.
+CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-${MINISWE_CONTAINER_EXECUTABLE:-podman}}
+
 #NUM_GPUS=1
 #NNODES=1
 # ───────── 资源设置：单节点两张 A100 ─────────
@@ -35,13 +40,12 @@ uv run --isolated --extra vllm --extra miniswe --env-file examples/mini_swe_agen
   trainer.policy.model.path="Qwen/Qwen2.5-Coder-0.5B" \
   trainer.placement.colocate_all=false \
   trainer.strategy=fsdp2 \
-  trainer.placement.policy_num_gpus_per_node=2 \
+  trainer.placement.policy_num_gpus_per_node=$NUM_POLICY_GPUS \
   trainer.placement.ref_num_gpus_per_node=0 \
   trainer.placement.policy_num_nodes=$NNODES \
   trainer.placement.ref_num_nodes=$NNODES \
-    # Policy 并行（FSDP2 切分，DP=1 防止除零）
+  # Policy 并行（FSDP2 切分，DP=1 防止除零）
   trainer.policy.sequence_parallel_size=1 \
-#  trainer.policy.data_parallel_size=2 \
   generator.num_inference_engines=$NUM_INFERENCE_ENGINES \
   generator.inference_engine_tensor_parallel_size=$TP_SIZE \
   trainer.epochs=20 \
@@ -77,6 +81,7 @@ uv run --isolated --extra vllm --extra miniswe --env-file examples/mini_swe_agen
   trainer.resume_mode=null \
   trainer.ckpt_path="$CKPT_PATH" \
   +generator.miniswe_config_path="examples/mini_swe_agent/swebench.yaml" \
+  generator.miniswe_container_executable="$CONTAINER_RUNTIME" \
   +generator.miniswe_traj_dir=$MINISWE_TRAJ_DIR
 #  --cfg job --resolve
   $@

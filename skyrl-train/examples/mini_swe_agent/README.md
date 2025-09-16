@@ -32,7 +32,7 @@ uv run --isolated examples/mini_swe_agent/preprocess_swegym.py --output_dir ~/da
 
 ### 2) Configure environment backend
 
-**Prerequisites**: Install the required environment backend. By default, we use [Podman](https://podman.io/docs). This can be modified in `examples/mini_swe_agent/swebench.yaml`.
+**Prerequisites**: Install the required environment backend. By default, we use [Podman](https://podman.io/docs). If Podman is not available (for example, when running inside Singularity), set `CONTAINER_RUNTIME=docker` or `MINISWE_CONTAINER_EXECUTABLE=docker` before launching the run script to reuse an existing Docker installation. You can still edit `examples/mini_swe_agent/swebench.yaml` if you prefer a persistent change.
 
 ### 3) Launch training
 
@@ -67,9 +67,11 @@ For issues with SkyRL or the Mini-SWE-Agent integration, please [open an Issue](
 
 - **Argument list too long**: For very large git patches, you might notice evaluation errors such as `Argument list too long: 'podman'`. This is because we apply the model's git patch by passing it as a CLI argument, and for large patches, you can hit the system's `ARG_MAX` limits. On modern systems, this limit is about ~1MB. We make a simple assumption that such large patches are meant to be incorrect.
 
-- **Podman UID errors**: If running podman within a container, you might hit errors due to insufficient UIDs. To resolve this, you have two options on Linux-based machines:
+- **Podman UID errors / missing Podman**: If running Podman within a container, you might hit errors due to insufficient UIDs. To resolve this, you have two options on Linux-based machines:
   1. Edit the `/etc/subuid` and `/etc/subgid` files to use a larger range of UIDs, like `100000-1100000`
   2. Set `ignore_chown_errors=true` in Podman's containers.conf
+
+  When Podman itself is unavailable, override the container runtime by exporting `CONTAINER_RUNTIME=docker` (or setting `MINISWE_CONTAINER_EXECUTABLE`) before running the training script so Mini-SWE-Agent uses Docker instead.
 
 ## Configuration
 

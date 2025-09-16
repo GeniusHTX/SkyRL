@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import Dict, List, Optional, Any, Tuple
 from omegaconf import DictConfig
 import yaml
@@ -123,6 +124,13 @@ class MiniSweAgentGenerator(SkyRLGymGenerator):
     ) -> Tuple[List[int], float, str, List[int], List[int], Optional[List[int]]]:
 
         sweagent_config = yaml.safe_load(get_config_path(self.generator_cfg.miniswe_config_path).read_text())
+
+        container_executable = self.generator_cfg.get("miniswe_container_executable") or os.getenv(
+            "MINISWE_CONTAINER_EXECUTABLE"
+        ) or os.getenv("CONTAINER_RUNTIME")
+        if container_executable:
+            environment_cfg = sweagent_config.setdefault("environment", {})
+            environment_cfg["executable"] = container_executable
         # NOTE (sumanthrh): Input `prompt` is not used here because mini-swe-agent uses a similar entry from the `instance` obj
         messages, reward, error = await init_and_run.remote(
             env_extras["instance"],
